@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,20 +6,23 @@ using UnityEngine;
 public class FPSController : MonoBehaviour
 {
     private float _xRotation;
-    private Vector3 _moveVector;
-    private CharacterController _controller;
+    private Vector3 _playerVelocity;
+    CharacterController _player;
+    [SerializeField] private bool groundedPlayer;
+    [SerializeField] private float _jumpForce = 1.0f;
     [SerializeField] private float mouseSensitivity = 200f;
     [SerializeField] private float speed = 5f;
     [SerializeField] private Camera camera;
     [SerializeField] private float xCameraBounds = 60f;
-    
+    [SerializeField] private float gravityValue = -9.81f;
+
     #region Smoothing code
     private Vector2 _currentMouseDelta;
     private Vector2 _currentMouseVelocity;
     [SerializeField] private float smoothTime = .1f;
     
     #endregion
-    // Start is called before the first frame update
+  
     void Start()
     {
         Cursor.visible = false;
@@ -28,22 +31,45 @@ public class FPSController : MonoBehaviour
 
     void Awake()
     {
-        _controller = GetComponent<CharacterController>();
+        _player = GetComponent<CharacterController>();
     }
 
-    // Update is called once per frame
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.transform.tag == "SpecialArea")
+        {
+            Debug.Log("TriggerEnter");
+        }
+    }
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.transform.tag == "SpecialArea")
+        {
+            Debug.Log("TriggerExit");
+        }
+    }
     void Update()
     {
         Movement();
+        Jump();
         Rotation();
+    }
+
+    private void Jump()
+    {
+        if (Input.GetKey(KeyCode.Space) && groundedPlayer)
+        {
+            _playerVelocity.y += Mathf.Sqrt(_jumpForce * -3.0f * gravityValue);
+        }
+        _playerVelocity.y += gravityValue * Time.deltaTime;
+        _player.Move(_playerVelocity * Time.deltaTime);
     }
 
     private void Movement()
     {
-        //_moveVector = new Vector3(Input.GetAxis("Horizontal"),0, Input.GetAxis("Vertical")) * speed * Time.deltaTime;//initial way of showing movement
-        _moveVector = transform.forward * Input.GetAxis("Vertical") + transform.right * Input.GetAxis("Horizontal"); //easier to explain after by using the forward and right vectors
-        _moveVector.Normalize();
-        _controller.SimpleMove(_moveVector * speed );
+        _playerVelocity = transform.forward * Input.GetAxis("Vertical") + transform.right * Input.GetAxis("Horizontal"); //easier to explain after by using the forward and right vectors
+        _playerVelocity.Normalize();
+        _player.SimpleMove(_playerVelocity * speed );
     }
 
     private void Rotation()
